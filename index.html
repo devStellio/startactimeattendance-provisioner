@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Startac Time Attendance</title>
+  <link rel="icon" type="image/svg+xml" href="/StartLogoIcon.svg" />
+  <!-- Estilos criticos inline para evitar FOUC -->
+  <style>
+    :root {
+      --primary: #1A1A36;
+      --bg: #f5f5f5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); }
+    #app { opacity: 0; transition: opacity 0.3s ease; }
+    #app.loaded { opacity: 1; }
+    /* Loader */
+    #loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    .loader-header {
+      background: var(--primary);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .loader-header h1 { font-size: 1.5rem; margin-bottom: 5px; }
+    .loader-header p { opacity: 0.9; font-size: 0.9rem; }
+    .loader-skeleton {
+      width: 90%;
+      max-width: 900px;
+    }
+    .skeleton-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .skeleton-line {
+      height: 14px;
+      background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .skeleton-line.title { height: 20px; width: 60%; margin-bottom: 15px; }
+    .skeleton-line.short { width: 40%; }
+    .skeleton-line.medium { width: 70%; }
+    .skeleton-btn {
+      display: inline-block;
+      width: 140px;
+      height: 40px;
+      background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loader skeleton -->
+  <div id="loader">
+    <div class="loader-header">
+      <h1>Startac Time Attendance</h1>
+      <p>Cargando...</p>
+    </div>
+    <div class="loader-skeleton">
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line medium"></div>
+        <div class="skeleton-line short"></div>
+        <div class="skeleton-line medium"></div>
+        <div style="margin-top: 15px;">
+          <div class="skeleton-btn"></div>
+          <div class="skeleton-btn"></div>
+        </div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+    <header>
+      <h1>Startac Time Attendance</h1>
+      <p class="subtitle">Instalar y provisionar para modo kiosko</p>
+    </header>
+
+    <main>
+      <section id="connection-section" class="card">
+        <h2>Dispositivo Android 9+ requerido. Conexion USB</h2>
+        <ol class="instructions">
+          <li>Habilita <strong>Depuracion USB</strong> en Opciones de desarrollador del dispositivo <button id="btn-help-usb" class="btn-info" title="Ver instrucciones detalladas">i</button></li>
+          <li>Conecta el dispositivo a la computadora con cable USB</li>
+          <li>Haz clic en <strong>Conectar Dispositivo</strong> y selecciona el dispositivo</li>
+          <li>En el dispositivo, acepta el mensaje de <strong>Permitir depuracion USB</strong></li>
+        </ol>
+        <div id="connection-status" class="status disconnected">
+          <span class="indicator"></span>
+          <span class="text">Desconectado</span>
+        </div>
+        <div class="button-group">
+          <button id="btn-connect" class="btn primary">Conectar Dispositivo</button>
+          <button id="btn-disconnect" class="btn secondary" disabled>Desconectar</button>
+        </div>
+      </section>
+
+      <section id="device-info-section" class="card hidden">
+        <h2>Informacion del Dispositivo</h2>
+        <div class="info-grid">
+          <div class="info-item"><label>Fabricante:</label><span id="info-manufacturer">-</span></div>
+          <div class="info-item"><label>Modelo:</label><span id="info-model">-</span></div>
+          <div class="info-item"><label>Android:</label><span id="info-android">-</span></div>
+          <div class="info-item"><label>Serial:</label><span id="info-serial">-</span></div>
+        </div>
+      </section>
+
+      <section id="app-status-section" class="card hidden">
+        <h2>Estado de la App</h2>
+        <div class="info-grid">
+          <div class="info-item"><label>Instalada:</label><span id="app-installed">-</span></div>
+          <div class="info-item"><label>Version:</label><span id="app-version">-</span></div>
+          <div class="info-item"><label>Dispositivo provisionado para modo kiosko:</label><span id="app-device-owner">-</span></div>
+        </div>
+      </section>
+
+      <section id="install-section" class="card hidden">
+        <h2>Instalacion</h2>
+        <ol class="instructions">
+          <li><a id="btn-download-apk" href="#" class="btn primary" download="StartacAttendance.apk">Descargar</a></li>
+          <li><input type="file" id="apk-file" accept=".apk" /> <span class="file-hint">Selecciona el archivo descargado</span></li>
+          <li><button id="btn-install-apk" class="btn primary" disabled>Instalar</button></li>
+        </ol>
+        <div id="install-progress" class="progress hidden">
+          <div class="progress-bar"></div>
+          <span class="progress-text">0%</span>
+        </div>
+      </section>
+
+      <section id="provisioning-section" class="card hidden">
+        <h2>Acciones</h2>
+        <div class="actions-grid">
+          <div class="action-group">
+            <h3>Provisionamiento para modo kiosko</h3>
+            <button id="btn-set-owner" class="btn primary">Establecer</button>
+            <button id="btn-remove-owner" class="btn danger">Quitar</button>
+          </div>
+          <div class="action-group">
+            <h3>Otros</h3>
+            <button id="btn-uninstall" class="btn danger">Desinstalar App</button>
+            <button id="btn-reboot" class="btn secondary">Reiniciar Dispositivo</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="log-section" class="card">
+        <h2>Log</h2>
+        <div id="log-container"></div>
+        <button id="btn-clear-log" class="btn secondary">Limpiar Log</button>
+      </section>
+    </main>
+
+    <footer>
+      <p>Startac Time Attendance | Instalador</p>
+    </footer>
+  </div>
+
+  <!-- Modal de ayuda USB -->
+  <div id="modal-usb-help" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Como habilitar Depuracion USB</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Sigue estos pasos en tu dispositivo Android:</p>
+
+        <div class="help-section">
+          <h4>1. Habilitar Opciones de desarrollador</h4>
+          <ol>
+            <li>Ve a <strong>Ajustes</strong> (o Configuracion)</li>
+            <li>Busca <strong>Acerca del telefono</strong> o <strong>Acerca del dispositivo</strong> (puede estar dentro de "Sistema" o "Informacion del dispositivo")</li>
+            <li>Busca <strong>Numero de compilacion</strong> (en algunos dispositivos Samsung esta en "Informacion de software")</li>
+            <li>Toca <strong>7 veces seguidas</strong> sobre "Numero de compilacion"</li>
+            <li>Veras un mensaje: <em>"Ahora eres desarrollador"</em></li>
+          </ol>
+        </div>
+
+        <div class="help-section">
+          <h4>2. Activar Depuracion USB</h4>
+          <ol>
+            <li>Regresa a <strong>Ajustes</strong></li>
+            <li>Busca <strong>Opciones de desarrollador</strong> (puede estar en "Sistema" > "Avanzado")</li>
+            <li>Activa el interruptor de <strong>Opciones de desarrollador</strong> si esta desactivado</li>
+            <li>Busca y activa <strong>Depuracion USB</strong> (o "Depuracion por USB")</li>
+            <li>Confirma el mensaje de advertencia tocando <strong>Aceptar</strong></li>
+          </ol>
+        </div>
+
+        <div class="help-section help-note">
+          <h4>Nota para dispositivos Samsung</h4>
+          <p>En dispositivos Samsung Galaxy, la ruta puede ser:</p>
+          <p><strong>Ajustes > Acerca del telefono > Informacion de software > Numero de compilacion</strong></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn primary modal-close-btn">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificacion -->
+  <div id="notification" class="notification hidden">
+    <div class="notification-content">
+      <span id="notification-message"></span>
+      <button id="notification-close" class="notification-close">&times;</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
