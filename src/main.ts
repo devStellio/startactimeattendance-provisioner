@@ -186,8 +186,7 @@ async function installApk(file: File) {
     const installSuccess = r.toLowerCase().includes('success');
     if (installSuccess) {
       log('Instalacion completada', 'success');
-      log(SECURITY_MSG, 'warning');
-      notify('App instalada correctamente. ' + SECURITY_MSG, 'warning', 0);
+      notify('App instalada correctamente.', 'success');
     } else {
       log('Error en la instalacion', 'error');
       notify('Error al instalar la app. Verifica que el archivo APK sea valido.', 'error');
@@ -200,8 +199,6 @@ async function installApk(file: File) {
 
 function upProg(p: number) { elements.progressBar.style.width = p + '%'; elements.progressText.textContent = p + '%'; }
 
-const SECURITY_MSG = 'IMPORTANTE: Deshabilita "Depuracion USB" en Opciones de desarrollador del dispositivo antes de entregarlo al usuario.';
-
 async function setDeviceOwner() {
   if (!adb) return;
   log('Estableciendo modo kiosko...');
@@ -213,8 +210,7 @@ async function setDeviceOwner() {
       notify(msg, 'error', 0);
     } else if (r.includes('Success') || r.includes('Active admin')) {
       log('Modo kiosko establecido correctamente', 'success');
-      log(SECURITY_MSG, 'warning');
-      notify('Modo kiosko establecido correctamente. ' + SECURITY_MSG, 'warning', 0);
+      notify('Modo kiosko establecido correctamente.', 'success');
     } else {
       log('Error al establecer modo kiosko', 'error');
       notify('Error al establecer modo kiosko. El dispositivo puede no ser compatible o ya tener un administrador.', 'error');
@@ -248,8 +244,7 @@ async function removeDeviceOwner() {
 
     if (!stillOwner) {
       log('Modo kiosko quitado correctamente', 'success');
-      log(SECURITY_MSG, 'warning');
-      notify('Modo kiosko quitado correctamente. ' + SECURITY_MSG, 'warning', 0);
+      notify('Modo kiosko quitado correctamente.', 'success');
     } else {
       log('No se pudo quitar el modo kiosko. Verifica la version de la app.', 'warning');
       notify('No se pudo quitar el modo kiosko. Asegurate de tener la app actualizada.', 'warning');
